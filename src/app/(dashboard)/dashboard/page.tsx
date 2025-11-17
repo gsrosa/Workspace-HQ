@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { getServerSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
+import { DashboardSkeleton } from '@/features/dashboard';
+import { DashboardContent } from './dashboard-content';
 
 export default async function DashboardPage() {
   const session = await getServerSession();
@@ -11,11 +13,9 @@ export default async function DashboardPage() {
 
   return (
     <div className="p-8">
-      <h1 className="text-2xl font-bold text-text-100 mb-4">
-        Welcome, {session.user.name || session.user.email}!
-      </h1>
-      <p className="text-muted-400">This is your dashboard.</p>
+      <Suspense fallback={<DashboardSkeleton />}>
+        <DashboardContent />
+      </Suspense>
     </div>
   );
 }
-

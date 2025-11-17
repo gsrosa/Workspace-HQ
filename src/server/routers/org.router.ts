@@ -2,11 +2,25 @@ import { z } from 'zod';
 import { router, protectedProcedure } from '@/lib/trpc';
 import { prisma } from '@/lib/prisma';
 import { TRPCError } from '@trpc/server';
+import { rateLimit } from '@/lib/rate-limit';
 
 export const orgRouter = router({
   createOrg: protectedProcedure
     .input(z.object({ name: z.string().min(1, 'Organization name is required') }))
     .mutation(async ({ ctx, input }) => {
+      // Rate limit: 3 orgs per hour per user
+      const { success } = await rateLimit.check(
+        `create-org:${ctx.session.user.id}`,
+        3,
+        '1h'
+      );
+
+      if (!success) {
+        throw new TRPCError({
+          code: 'TOO_MANY_REQUESTS',
+          message: 'Too many organization creation requests. Please try again later.',
+        });
+      }
       const org = await prisma.organization.create({
         data: {
           name: input.name,
