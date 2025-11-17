@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '../hooks/use-auth';
 
-export const SignupForm = () => {
+export const SignupForm = ({ inviteToken }: { inviteToken?: string }) => {
   const router = useRouter();
   const { signIn } = useAuth();
   const {
@@ -34,6 +34,26 @@ export const SignupForm = () => {
         const error = await response.json();
         setError('root', { message: error.message || 'Failed to create account' });
         return;
+      }
+
+      // If there's an invite token, accept the invite
+      if (inviteToken) {
+        const inviteResponse = await fetch(`/api/invite/accept?token=${inviteToken}`, {
+          method: 'POST',
+        });
+        if (!inviteResponse.ok) {
+          setError('root', { message: 'Failed to accept invite' });
+          return;
+        }
+        const inviteData = await inviteResponse.json();
+        
+        // Auto-login
+        const result = await signIn(data.email, data.password);
+        if (result?.ok) {
+          router.push(`/orgs/${inviteData.organizationId}/tasks`);
+          router.refresh();
+          return;
+        }
       }
 
       // Auto-login after signup
