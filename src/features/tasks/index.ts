@@ -1,2 +1,11 @@
-// Public API for tasks feature
-
+export { TaskList } from './components/task-list';
+export { TaskForm } from './components/task-form';
+export { VirtualizedTaskTable } from './components/virtualized-task-table';
+export { TaskSkeleton } from './components/task-skeleton';
+export { useTasks, useTask } from './hooks/use-task-query';
+export { useCreateTask, useUpdateTask, useDeleteTask } from './hooks/use-task-mutations';
+export { createTaskSchema, updateTaskSchema } from './shared/validations';
+export type { CreateTaskInput, UpdateTaskInput } from './shared/validations';
+export type { Task } from './shared/models';
+export { TASK_STATUSES, TASK_PRIORITIES } from './shared/constants';
+export type { TaskStatus, TaskPriority } from './shared/constants';
