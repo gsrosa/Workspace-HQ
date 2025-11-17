@@ -1,0 +1,11 @@
+---
+alwaysApply: true
+---
+# State Management
+
+- Use `nuqs` for managing URL search parameters. Always create custom hooks for better reusability and organization.
+- Use `react-hook-form` integrated with shadcn/ui `Form` components for all form implementations. Use `zod` to create form schema validations.
+- Use `zustand` alongside React's Context API to make state local to a single page. This prevents state pollution between different pages.
+- Use `zustand` for application-wide state that needs to be accessed across multiple features or pages.
+- Use `@tanstack/react-query` for managing HTTP/API states, caching, and server state synchronization.
+- Minimize the use of `useEffect` and `useState`; favor derived state and memoization when possible.

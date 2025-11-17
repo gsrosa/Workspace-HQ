@@ -1,0 +1,68 @@
+---
+alwaysApply: true
+---
+# Project Structure
+
+## Overview
+The project follows a modular approach with most code residing in the `src` folder. The structure is organized to promote maintainability and clear separation of concerns.
+
+## Root Structure
+```sh
+src
+|
++-- @types            # Shared type declarations across the entire application
+|
++-- components        # Shared components used throughout the application
+|
++-- constants         # Shared constant values used throughout the application
+|
++-- features          # Feature-based modules
+|
++-- hooks             # Shared hooks used throughout the application
+|
++-- lib               # Re-exporting different libraries preconfigured for the application
+|
++-- app               # Tanstack Router pages associated with a route based on the file name
+|
++-- styles            # Global styles and application theme
+|
++-- utils             # Shared utility functions
+```
+
+## Feature-Based Architecture
+Most code is organized inside the `features` folder, which contains domain-specific code for each feature. Every feature folder should follow this structure:
+
+```sh
+src/features/my-feature
+|
++-- components  # Components related to the specific feature
+|
++-- constants   # Shared constant values related to the specific feature
+|
++-- hooks       # Hooks related to the specific feature
+|
++-- shared      # Shared types (models and validation schemas) and constants across the feature
+|
++-- store       # React contexts, zustand stores or any state management related to the specific feature
+|
++-- index.ts    # Entry point for the feature, serving as the public API
+```
+
+## Import Patterns
+- Always import from the feature's index.ts file (the public API)
+- Never import directly from subdirectories within features
+
+✅ Correct:
+```ts
+import { MyComponent } from "@/features/my-feature";
+```
+
+❌ Incorrect:
+```ts
+import { MyComponent } from "@/features/my-feature/components/my-component";
+```
+
+## Feature Public API
+- Each feature must export all public items through its `index.ts` file
+- The `index.ts` serves as the feature's public API
+- This ensures clean imports and proper encapsulation

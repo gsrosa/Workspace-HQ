@@ -1,0 +1,45 @@
+---
+alwaysApply: true
+---
+# API Layer
+
+## tRPC Architecture
+- We use tRPC to connect to the BFF (Backend for Frontend)
+- The BFF is responsible for defining endpoints, inputs, and outputs
+- Frontend imports types from the generated tRPC file
+- Queries and mutations must use TanStack Query integration with tRPC
+- Whenever possible, use the `prefetch` and `batchPrefetch` functions (src/trpc/client.tsx) at the page level using `beforeLoad` to prefetch the queries used on that page.
+
+## Type Imports
+- Always import types from the generated tRPC types file
+- Use `RouterOutputs` for accessing model/type definitions
+- Use `RouterInputs` for input parameter types
+- Use `AppRouter` for router type definitions
+
+## Model/Type Access Pattern
+- Never create local type definitions for API models
+- Always import from `RouterOutputs` using the proper path structure
+- Example: `RouterOutputs["shortcuts"]["get"]["items"][number]`
+
+## Import Examples
+```ts
+// ✅ Correct - Import from RouterOutputs
+import type { RouterOutputs } from "@/trpc/types";
+
+export type Shortcut = RouterOutputs["shortcuts"]["get"]["items"][number];
+export type User = RouterOutputs["users"]["getById"];
+```
+
+```ts
+// ❌ Incorrect - Don't create local types
+export interface Shortcut {
+  id: string;
+  name: string;
+  // ...
+}
+```
+
+## File Location
+- tRPC client configuration: `/src/trpc/client.tsx`
+- tRPC types: `/src/trpc/types.ts`
+- All API-related types should reference these files

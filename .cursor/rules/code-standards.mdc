@@ -1,0 +1,51 @@
+---
+alwaysApply: true
+---
+# Code Standards
+
+## General Principles
+- Write concise, technical TypeScript code with accurate examples
+- Use functional and declarative programming patterns; avoid classes
+- Prefer iteration and modularization over code duplication
+- Use the `const` keyword for pure functions
+- Use descriptive variable and function/const names. Also, event functions should be named with a “handle” prefix, like “handleClick” for onClick and “handleKeyDown” for onKeyDown.
+- When importing icons from `lucide/react` package, always use the `Icon` suffix, exemples: `Check` and `ChevronDown` should be `CheckIcon` and `ChevronDownIcon`.
+
+## React Imports
+- Always import React and use hooks from the React object
+- Do not use destructured imports from React
+
+❌ Incorrect:
+```tsx
+import { useEffect, useState, Suspense } from "react";
+
+const [state, setState] = useState();
+
+useEffect(() => {}, [])
+
+<Suspense></Suspense>
+```
+
+✅ Correct:
+```tsx
+import React from "react";
+
+const [state, setState] = React.useState();
+
+React.useEffect(() => {}, []);
+
+<React.Suspense></React.Suspense>
+```
+
+## Absolute Imports
+- `src` folder is the base path for imports
+- Always use `@` symbol to refer to any file or folder within `src`
+- Example: `src/components/ui/button` should be imported as `@/components/ui/button`
+
+## File Naming Convention - Kebab Case
+- Use Kebab Case for all file and folder names
+- Use lowercase letters with hyphens to separate words
+- Examples:
+  - `MyComponent.tsx` → `my-component.tsx`
+  - `myUtilFunction.ts` → `my-util-function.ts`
+  - `UserProfile.tsx` → `user-profile.tsx`

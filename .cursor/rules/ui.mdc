@@ -1,0 +1,17 @@
+---
+alwaysApply: true
+---
+# UI Guidelines
+
+## Styling
+- Use TailwindCSS as the primary CSS framework for all styling
+- Always use Tailwind classes for styling HTML elements; avoid using CSS or tags.
+- Utilize the `cn` helper function for combining multiple CSS classes
+
+## Accessibility
+- Use Radix UI components for headless, accessible UI patterns
+- Follow WAI-ARIA design patterns for all interactive elements
+
+## Design System Components
+- All design system components are located in `/src/components/ui`, do not ever update files in this folder
+- Components are inspired by shadcn/ui library patterns and styles
