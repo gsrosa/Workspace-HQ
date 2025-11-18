@@ -1,17 +1,6 @@
-export interface Task {
-  id: string;
-  title: string;
-  description: string | null;
-  status: string;
-  priority: string;
-  organizationId: string;
-  assignedToId: string | null;
-  assignedTo: {
-    id: string;
-    name: string | null;
-    email: string;
-  } | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import type { AppRouter } from '@/server/routers/_app';
+import type { inferRouterOutputs } from '@trpc/server';
 
+type RouterOutputs = inferRouterOutputs<AppRouter>;
+
+export type Task = RouterOutputs['task']['listTasks']['tasks'][number];

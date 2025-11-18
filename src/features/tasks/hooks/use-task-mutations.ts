@@ -33,10 +33,10 @@ export const useCreateTask = (organizationId: string) => {
           ...old,
           pages: [
             {
-              items: [optimisticTask, ...old.pages[0]?.items || []],
-              nextCursor: old.pages[0]?.nextCursor,
+              tasks: [optimisticTask],
+              nextCursor: undefined,
             },
-            ...old.pages.slice(1),
+            ...old.pages,
           ],
         };
       });
@@ -70,10 +70,8 @@ export const useUpdateTask = (organizationId: string) => {
           ...old,
           pages: old.pages.map((page) => ({
             ...page,
-            items: page.items.map((task) =>
-              task.id === updatedTask.id
-                ? { ...task, ...updatedTask }
-                : task
+            tasks: page.tasks.map((task) =>
+              task.id === updatedTask.id ? { ...task, ...updatedTask } : task
             ),
           })),
         };
@@ -107,7 +105,7 @@ export const useDeleteTask = (organizationId: string) => {
           ...old,
           pages: old.pages.map((page) => ({
             ...page,
-            items: page.items.filter((task) => task.id !== deletedTask.id),
+            tasks: page.tasks.filter((task) => task.id !== deletedTask.id),
           })),
         };
       });
@@ -124,4 +122,3 @@ export const useDeleteTask = (organizationId: string) => {
     },
   });
 };
-

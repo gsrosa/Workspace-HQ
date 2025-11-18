@@ -3,15 +3,24 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export const TaskSkeleton = () => {
   return (
-    <div className="flex items-center gap-4 p-4 border-b border-border-300">
-      <Skeleton className="h-4 w-4 rounded" />
-      <div className="flex-1 space-y-2">
-        <Skeleton className="h-4 w-48" />
-        <Skeleton className="h-3 w-32" />
+    <div className="space-y-3 p-4 border-b border-border-300">
+      <div className="flex items-start justify-between">
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
+        </div>
+        <Skeleton className="h-8 w-20" />
       </div>
-      <Skeleton className="h-6 w-20 rounded" />
-      <Skeleton className="h-6 w-16 rounded" />
     </div>
   );
 };
 
+export const TaskListSkeleton = ({ count = 5 }: { count?: number }) => {
+  return (
+    <div className="divide-y divide-border-300">
+      {Array.from({ length: count }).map((_, i) => (
+        <TaskSkeleton key={i} />
+      ))}
+    </div>
+  );
+};

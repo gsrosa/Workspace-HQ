@@ -13,9 +13,5 @@ export const useTasks = (organizationId: string) => {
 };
 
 export const useTask = (id: string, organizationId: string) => {
-  return trpc.task.getTask.useQuery({
-    id,
-    organizationId,
-  });
+  return trpc.task.getTask.useQuery({ id, organizationId });
 };
-
