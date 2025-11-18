@@ -1,6 +1,7 @@
 export interface DashboardStats {
-  taskCount: number;
-  memberCount: number;
-  organizationCount: number;
+  totalTasks: number;
+  todoTasks: number;
+  inProgressTasks: number;
+  doneTasks: number;
+  totalMembers: number;
 }
-

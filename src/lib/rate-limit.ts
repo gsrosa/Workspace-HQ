@@ -11,6 +11,27 @@ const redis = process.env.UPSTASH_REDIS_REST_URL
     })
   : null;
 
+const parseWindow = (window: string): number => {
+  const match = window.match(/^(\d+)([smhd])$/);
+  if (!match) return 10000; // default 10s
+
+  const value = parseInt(match[1]!);
+  const unit = match[2]!;
+
+  switch (unit) {
+    case 's':
+      return value * 1000;
+    case 'm':
+      return value * 60 * 1000;
+    case 'h':
+      return value * 60 * 60 * 1000;
+    case 'd':
+      return value * 24 * 60 * 60 * 1000;
+    default:
+      return 10000;
+  }
+};
+
 const createMemoryRateLimit = () => ({
   check: async (identifier: string, limit: number, window: string) => {
     const key = `ratelimit:${identifier}`;
@@ -33,27 +54,6 @@ const createMemoryRateLimit = () => ({
   },
 });
 
-const parseWindow = (window: string): number => {
-  const match = window.match(/^(\d+)([smhd])$/);
-  if (!match) return 10000; // default 10s
-
-  const value = parseInt(match[1]!);
-  const unit = match[2]!;
-
-  switch (unit) {
-    case 's':
-      return value * 1000;
-    case 'm':
-      return value * 60 * 1000;
-    case 'h':
-      return value * 60 * 60 * 1000;
-    case 'd':
-      return value * 24 * 60 * 60 * 1000;
-    default:
-      return 10000;
-  }
-};
-
 export const rateLimit = redis
   ? new Ratelimit({
       redis,
@@ -61,3 +61,18 @@ export const rateLimit = redis
       analytics: true,
     })
   : createMemoryRateLimit();
+
+// Helper function for tRPC middleware
+export const checkRateLimit = async (identifier: string, limit: number, window: string) => {
+  if (redis) {
+    const result = await rateLimit.limit(identifier);
+    return {
+      success: result.success,
+      limit,
+      remaining: result.remaining,
+      reset: result.reset,
+    };
+  } else {
+    return await (rateLimit as ReturnType<typeof createMemoryRateLimit>).check(identifier, limit, window);
+  }
+};
