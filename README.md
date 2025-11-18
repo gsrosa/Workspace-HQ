@@ -12,9 +12,9 @@ Production-grade Mini-SaaS showcasing enterprise frontend architecture, RBAC, vi
 
 ## 🚀 Demo
 
-- **Live Demo**: [workspace-hq.vercel.app](https://workspace-hq.vercel.app)
-- **Demo Video**: [Watch 2-minute walkthrough](./docs/demo-video.md)
-- **Storybook**: [Component Library](https://chromatic.com/workspace-hq)
+- **Live Demo**: [workspace-hq.vercel.app](https://workspace-hq.vercel.app) *(Update with actual URL)*
+- **Demo Video**: [Watch 2-minute walkthrough](./docs/demo-video.md) *(Add video link)*
+- **Storybook**: [Component Library](https://chromatic.com/workspace-hq) *(Update with actual URL)*
 
 ![Dashboard GIF](./public/screenshots/dashboard.gif)
 
@@ -261,7 +261,7 @@ chore: finalize README + deploy + demo (TDD-15,16)
 
 ## 🎬 Demo Video
 
-[Watch 2-minute demo walkthrough](./docs/demo-video.md)
+[Watch 2-minute demo walkthrough](./docs/demo-video.md) *(Add video link)*
 
 **Highlights:**
 - 0:00-0:15 - Landing page and overview
