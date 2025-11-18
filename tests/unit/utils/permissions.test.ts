@@ -19,4 +19,3 @@ describe('TDD-13: Permission utils', () => {
     expect(isRoleAllowed(Role.MEMBER, [Role.MEMBER])).toBe(true);
   });
 });
-
