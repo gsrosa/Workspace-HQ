@@ -5,64 +5,37 @@ import { TRPCError } from '@trpc/server';
 
 export const dashboardRouter = router({
   getDashboardStats: protectedProcedure
-    .input(z.object({ organizationId: z.string().optional() }))
+    .input(z.object({ organizationId: z.string() }))
     .query(async ({ ctx, input }) => {
-      const userId = ctx.session.user.id;
-
-      if (input.organizationId) {
-        // Verify user is a member
-        const membership = await prisma.organizationUser.findUnique({
-          where: {
-            organizationId_userId: {
-              organizationId: input.organizationId,
-              userId,
-            },
+      // Verify user is a member
+      const membership = await prisma.organizationUser.findUnique({
+        where: {
+          organizationId_userId: {
+            organizationId: input.organizationId,
+            userId: ctx.session.user.id,
           },
-        });
-
-        if (!membership) {
-          throw new TRPCError({ code: 'FORBIDDEN' });
-        }
-
-        // Get stats for specific org
-        const [taskCount, memberCount] = await Promise.all([
-          prisma.task.count({
-            where: { organizationId: input.organizationId },
-          }),
-          prisma.organizationUser.count({
-            where: { organizationId: input.organizationId },
-          }),
-        ]);
-
-        return {
-          taskCount,
-          memberCount,
-          organizationCount: 1,
-        };
-      }
-
-      // Get stats for all user's orgs
-      const orgs = await prisma.organizationUser.findMany({
-        where: { userId },
-        include: { organization: true },
+        },
       });
 
-      const orgIds = orgs.map((o) => o.organizationId);
+      if (!membership) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Not a member of this organization' });
+      }
 
-      const [taskCount, memberCount] = await Promise.all([
-        prisma.task.count({
-          where: { organizationId: { in: orgIds } },
-        }),
-        prisma.organizationUser.count({
-          where: { organizationId: { in: orgIds } },
-        }),
+      // Get simple counts
+      const [totalTasks, todoTasks, inProgressTasks, doneTasks, totalMembers] = await Promise.all([
+        prisma.task.count({ where: { organizationId: input.organizationId } }),
+        prisma.task.count({ where: { organizationId: input.organizationId, status: 'todo' } }),
+        prisma.task.count({ where: { organizationId: input.organizationId, status: 'in_progress' } }),
+        prisma.task.count({ where: { organizationId: input.organizationId, status: 'done' } }),
+        prisma.organizationUser.count({ where: { organizationId: input.organizationId } }),
       ]);
 
       return {
-        taskCount,
-        memberCount,
-        organizationCount: orgs.length,
+        totalTasks,
+        todoTasks,
+        inProgressTasks,
+        doneTasks,
+        totalMembers,
       };
     }),
 });
-
