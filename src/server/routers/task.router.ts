@@ -4,11 +4,11 @@ import { prisma } from '@/lib/prisma';
 import { TRPCError } from '@trpc/server';
 
 const taskSchema = z.object({
-  organizationId: z.string().min(1),
+  organizationId: z.string(),
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
-  status: z.enum(['todo', 'in_progress', 'done']).default('todo'),
-  priority: z.enum(['low', 'medium', 'high']).default('medium'),
+  status: z.enum(['todo', 'in_progress', 'done']).optional(),
+  priority: z.enum(['low', 'medium', 'high']).optional(),
   assignedToId: z.string().optional(),
 });
 
@@ -34,8 +34,8 @@ export const taskRouter = router({
         data: {
           title: input.title,
           description: input.description,
-          status: input.status,
-          priority: input.priority,
+          status: input.status || 'todo',
+          priority: input.priority || 'medium',
           organizationId: input.organizationId,
           assignedToId: input.assignedToId,
         },
@@ -55,59 +55,26 @@ export const taskRouter = router({
 
   updateTask: protectedProcedure
     .input(
-      taskSchema.extend({
+      z.object({
         id: z.string(),
-      }).partial().extend({ id: z.string(), organizationId: z.string() })
+        organizationId: z.string(),
+        title: z.string().min(1).optional(),
+        description: z.string().optional(),
+        status: z.enum(['todo', 'in_progress', 'done']).optional(),
+        priority: z.enum(['low', 'medium', 'high']).optional(),
+        assignedToId: z.string().optional().nullable(),
+      })
     )
     .mutation(async ({ ctx, input }) => {
-      const { id, organizationId, ...updateData } = input;
-
-      // Verify user is a member
-      const membership = await prisma.organizationUser.findUnique({
-        where: {
-          organizationId_userId: {
-            organizationId,
-            userId: ctx.session.user.id,
-          },
-        },
+      // Verify task exists and user has access
+      const task = await prisma.task.findUnique({
+        where: { id: input.id },
       });
 
-      if (!membership) {
-        throw new TRPCError({ code: 'FORBIDDEN' });
+      if (!task) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Task not found' });
       }
 
-      // Verify task belongs to organization
-      const existingTask = await prisma.task.findUnique({
-        where: { id },
-      });
-
-      if (!existingTask || existingTask.organizationId !== organizationId) {
-        throw new TRPCError({ code: 'NOT_FOUND' });
-      }
-
-      const task = await prisma.task.update({
-        where: { id },
-        data: updateData,
-        include: {
-          assignedTo: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-        },
-      });
-
-      return task;
-    }),
-
-  deleteTask: protectedProcedure
-    .input(z.object({
-      id: z.string(),
-      organizationId: z.string(),
-    }))
-    .mutation(async ({ ctx, input }) => {
       // Verify user is a member
       const membership = await prisma.organizationUser.findUnique({
         where: {
@@ -119,16 +86,56 @@ export const taskRouter = router({
       });
 
       if (!membership) {
-        throw new TRPCError({ code: 'FORBIDDEN' });
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Not a member of this organization' });
       }
 
-      // Verify task belongs to organization
-      const existingTask = await prisma.task.findUnique({
+      const updated = await prisma.task.update({
+        where: { id: input.id },
+        data: {
+          title: input.title,
+          description: input.description,
+          status: input.status,
+          priority: input.priority,
+          assignedToId: input.assignedToId ?? undefined,
+        },
+        include: {
+          assignedTo: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      return updated;
+    }),
+
+  deleteTask: protectedProcedure
+    .input(z.object({ id: z.string(), organizationId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      // Verify task exists and user has access
+      const task = await prisma.task.findUnique({
         where: { id: input.id },
       });
 
-      if (!existingTask || existingTask.organizationId !== input.organizationId) {
-        throw new TRPCError({ code: 'NOT_FOUND' });
+      if (!task) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Task not found' });
+      }
+
+      // Verify user is a member
+      const membership = await prisma.organizationUser.findUnique({
+        where: {
+          organizationId_userId: {
+            organizationId: input.organizationId,
+            userId: ctx.session.user.id,
+          },
+        },
+      });
+
+      if (!membership) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Not a member of this organization' });
       }
 
       await prisma.task.delete({
@@ -139,11 +146,13 @@ export const taskRouter = router({
     }),
 
   listTasks: protectedProcedure
-    .input(z.object({
-      organizationId: z.string(),
-      cursor: z.string().optional(),
-      limit: z.number().min(1).max(100).default(50),
-    }))
+    .input(
+      z.object({
+        organizationId: z.string(),
+        cursor: z.string().optional(),
+        limit: z.number().min(1).max(100).default(50),
+      })
+    )
     .query(async ({ ctx, input }) => {
       // Verify user is a member
       const membership = await prisma.organizationUser.findUnique({
@@ -156,14 +165,11 @@ export const taskRouter = router({
       });
 
       if (!membership) {
-        throw new TRPCError({ code: 'FORBIDDEN' });
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Not a member of this organization' });
       }
 
       const tasks = await prisma.task.findMany({
         where: { organizationId: input.organizationId },
-        take: input.limit + 1,
-        cursor: input.cursor ? { id: input.cursor } : undefined,
-        orderBy: { createdAt: 'desc' },
         include: {
           assignedTo: {
             select: {
@@ -173,45 +179,23 @@ export const taskRouter = router({
             },
           },
         },
+        orderBy: { createdAt: 'desc' },
+        take: input.limit,
+        skip: input.cursor ? 1 : 0,
+        cursor: input.cursor ? { id: input.cursor } : undefined,
       });
 
-      let nextCursor: string | undefined = undefined;
-      if (tasks.length > input.limit) {
-        const nextItem = tasks.pop();
-        nextCursor = nextItem?.id;
-      }
-
       return {
-        items: tasks,
-        nextCursor,
+        tasks,
+        nextCursor: tasks.length === input.limit ? tasks[tasks.length - 1]?.id : undefined,
       };
     }),
 
   getTask: protectedProcedure
-    .input(z.object({
-      id: z.string(),
-      organizationId: z.string(),
-    }))
+    .input(z.object({ id: z.string(), organizationId: z.string() }))
     .query(async ({ ctx, input }) => {
-      // Verify user is a member
-      const membership = await prisma.organizationUser.findUnique({
-        where: {
-          organizationId_userId: {
-            organizationId: input.organizationId,
-            userId: ctx.session.user.id,
-          },
-        },
-      });
-
-      if (!membership) {
-        throw new TRPCError({ code: 'FORBIDDEN' });
-      }
-
-      const task = await prisma.task.findFirst({
-        where: {
-          id: input.id,
-          organizationId: input.organizationId,
-        },
+      const task = await prisma.task.findUnique({
+        where: { id: input.id },
         include: {
           assignedTo: {
             select: {
@@ -224,10 +208,23 @@ export const taskRouter = router({
       });
 
       if (!task) {
-        throw new TRPCError({ code: 'NOT_FOUND' });
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Task not found' });
+      }
+
+      // Verify user is a member
+      const membership = await prisma.organizationUser.findUnique({
+        where: {
+          organizationId_userId: {
+            organizationId: input.organizationId,
+            userId: ctx.session.user.id,
+          },
+        },
+      });
+
+      if (!membership) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Not a member of this organization' });
       }
 
       return task;
     }),
 });
-

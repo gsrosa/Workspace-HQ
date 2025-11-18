@@ -1,154 +1,96 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React from 'react';
 import { useTasks } from '../hooks/use-task-query';
-import { useCreateTask, useUpdateTask, useDeleteTask } from '../hooks/use-task-mutations';
-import { TaskForm } from './task-form';
 import { VirtualizedTaskTable } from './virtualized-task-table';
-import { TaskSkeleton } from './task-skeleton';
+import { TaskSkeleton, TaskListSkeleton } from './task-skeleton';
+import { TaskForm } from './task-form';
 import { Button } from '@/components/ui/button';
-import type { CreateTaskInput, UpdateTaskInput } from '../shared/validations';
 import type { Task } from '../shared/models';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
 
 interface TaskListProps {
   organizationId: string;
 }
 
 export const TaskList = ({ organizationId }: TaskListProps) => {
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [deletingTask, setDeletingTask] = useState<Task | null>(null);
-  const parentRef = useRef<HTMLDivElement>(null);
+  const [isFormOpen, setIsFormOpen] = React.useState(false);
+  const [editingTask, setEditingTask] = React.useState<Task | undefined>();
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  
+  const { data, isLoading, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useTasks(organizationId);
 
-  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useTasks(organizationId);
-  const createTask = useCreateTask(organizationId);
-  const updateTask = useUpdateTask(organizationId);
-  const deleteTask = useDeleteTask(organizationId);
+  const allTasks = React.useMemo(() => {
+    return data?.pages.flatMap((page) => page.tasks) ?? [];
+  }, [data]);
 
-  const allTasks = data?.pages.flatMap((page) => page.items) || [];
-
-  const handleCreate = async (input: CreateTaskInput) => {
-    await createTask.mutateAsync({
-      ...input,
-      organizationId,
-    });
+  const handleEdit = (task: Task) => {
+    setEditingTask(task);
+    setIsFormOpen(true);
   };
 
-  const handleUpdate = async (input: UpdateTaskInput) => {
-    await updateTask.mutateAsync({
-      ...input,
-      organizationId,
-    });
+  const handleCreate = () => {
+    setEditingTask(undefined);
+    setIsFormOpen(true);
   };
 
-  const handleDelete = async () => {
-    if (deletingTask) {
-      await deleteTask.mutateAsync({
-        id: deletingTask.id,
-        organizationId,
-      });
-      setDeletingTask(null);
-    }
+  const handleFormSuccess = () => {
+    setIsFormOpen(false);
+    setEditingTask(undefined);
   };
 
   if (isLoading) {
+    return <TaskListSkeleton />;
+  }
+
+  if (error) {
     return (
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-text-100">Tasks</h1>
-          <Button disabled>New Task</Button>
-        </div>
-        <div className="bg-surface-600 border border-border-300 rounded-xl overflow-hidden">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <TaskSkeleton key={i} />
-          ))}
-        </div>
+      <div className="p-8 text-center">
+        <p className="text-danger-500">Failed to load tasks. Please try again.</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-text-100">Tasks</h1>
-        <Button onClick={() => setIsCreateOpen(true)}>New Task</Button>
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-text-100">Tasks</h2>
+        <Button onClick={handleCreate}>New Task</Button>
       </div>
 
-      <div className="bg-surface-600 border border-border-300 rounded-xl overflow-hidden">
-        {allTasks.length === 0 ? (
-          <div className="p-8 text-center text-muted-400">
-            <p>No tasks yet. Create your first task to get started.</p>
-          </div>
-        ) : (
+      {allTasks.length === 0 ? (
+        <div className="p-8 text-center border border-border-300 rounded-lg bg-surface-600">
+          <p className="text-muted-400 mb-4">No tasks yet. Create your first task to get started.</p>
+          <Button onClick={handleCreate}>Create Task</Button>
+        </div>
+      ) : (
+        <>
           <VirtualizedTaskTable
             tasks={allTasks}
-            onEdit={(task) => setEditingTask(task)}
-            onDelete={(task) => setDeletingTask(task)}
-            parentRef={parentRef}
+            organizationId={organizationId}
+            onEdit={handleEdit}
+            containerRef={containerRef}
           />
-        )}
-      </div>
-
-      {hasNextPage && (
-        <div className="text-center">
-          <Button
-            variant="secondary"
-            onClick={() => fetchNextPage()}
-            disabled={isFetchingNextPage}
-          >
-            {isFetchingNextPage ? 'Loading...' : 'Load More'}
-          </Button>
-        </div>
+          {hasNextPage && (
+            <div className="text-center">
+              <Button
+                variant="secondary"
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+              >
+                {isFetchingNextPage ? 'Loading...' : 'Load More'}
+              </Button>
+            </div>
+          )}
+        </>
       )}
 
       <TaskForm
-        open={isCreateOpen}
-        onOpenChange={setIsCreateOpen}
+        open={isFormOpen}
+        onOpenChange={setIsFormOpen}
         organizationId={organizationId}
-        onSubmit={handleCreate}
+        task={editingTask}
+        onSuccess={handleFormSuccess}
       />
-
-      <TaskForm
-        open={!!editingTask}
-        onOpenChange={(open) => !open && setEditingTask(null)}
-        organizationId={organizationId}
-        task={editingTask ? {
-          id: editingTask.id,
-          title: editingTask.title,
-          description: editingTask.description || undefined,
-          status: editingTask.status as 'todo' | 'in_progress' | 'done',
-          priority: editingTask.priority as 'low' | 'medium' | 'high',
-          assignedToId: editingTask.assignedToId || undefined,
-        } : undefined}
-        onSubmit={handleUpdate}
-      />
-
-      <Dialog open={!!deletingTask} onOpenChange={(open) => !open && setDeletingTask(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Task</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete "{deletingTask?.title}"? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="secondary" onClick={() => setDeletingTask(null)}>
-              Cancel
-            </Button>
-            <Button variant="danger" onClick={handleDelete}>
-              Confirm
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
-

@@ -1,7 +1,7 @@
 export { TaskList } from './components/task-list';
 export { TaskForm } from './components/task-form';
 export { VirtualizedTaskTable } from './components/virtualized-task-table';
-export { TaskSkeleton } from './components/task-skeleton';
+export { TaskSkeleton, TaskListSkeleton } from './components/task-skeleton';
 export { useTasks, useTask } from './hooks/use-task-query';
 export { useCreateTask, useUpdateTask, useDeleteTask } from './hooks/use-task-mutations';
 export { createTaskSchema, updateTaskSchema } from './shared/validations';

@@ -3,35 +3,52 @@
 import React from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { Task } from '../shared/models';
-import { getStatusColor, getPriorityColor, formatTaskDate } from '../utils/task-helpers';
+import { getTaskStatusColor, getTaskPriorityColor } from '../utils/task-helpers';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { useDeleteTask } from '../hooks/use-task-mutations';
 
 interface VirtualizedTaskTableProps {
   tasks: Task[];
+  organizationId: string;
   onEdit: (task: Task) => void;
-  onDelete: (task: Task) => void;
-  parentRef: React.RefObject<HTMLDivElement>;
+  containerRef: React.RefObject<HTMLDivElement>;
 }
 
 export const VirtualizedTaskTable = ({
   tasks,
+  organizationId,
   onEdit,
-  onDelete,
-  parentRef,
+  containerRef,
 }: VirtualizedTaskTableProps) => {
+  const deleteTask = useDeleteTask(organizationId);
+  const [deletingId, setDeletingId] = React.useState<string | null>(null);
+
   const virtualizer = useVirtualizer({
     count: tasks.length,
-    getScrollElement: () => parentRef.current,
+    getScrollElement: () => containerRef.current,
     estimateSize: () => 80,
     overscan: 5,
   });
 
+  const handleDelete = async (taskId: string) => {
+    if (!confirm('Are you sure you want to delete this task?')) return;
+    
+    setDeletingId(taskId);
+    try {
+      await deleteTask.mutateAsync({ id: taskId, organizationId });
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <div
-      ref={parentRef}
+      ref={containerRef}
       className="h-[600px] overflow-auto"
-      data-testid="task-list"
+      data-virtualized
+      data-testid="virtualized-list"
     >
       <div
         style={{
@@ -40,64 +57,60 @@ export const VirtualizedTaskTable = ({
           position: 'relative',
         }}
       >
-        {virtualizer.getVirtualItems().map((virtualItem) => {
-          const task = tasks[virtualItem.index];
+        {virtualizer.getVirtualItems().map((virtualRow) => {
+          const task = tasks[virtualRow.index];
           return (
             <div
               key={task.id}
-              data-testid="task-row"
-              data-index={virtualItem.index}
-              ref={virtualizer.measureElement}
               style={{
                 position: 'absolute',
                 top: 0,
                 left: 0,
                 width: '100%',
-                transform: `translateY(${virtualItem.start}px)`,
+                height: `${virtualRow.size}px`,
+                transform: `translateY(${virtualRow.start}px)`,
               }}
-              className={cn(
-                'flex items-center gap-4 p-4 border-b border-border-300',
-                'hover:bg-accent-500/5 transition-colors',
-                'group'
-              )}
+              className="border-b border-border-300 px-4 py-3 hover:bg-accent-500/5 transition-colors"
             >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-3 mb-1">
-                  <h3 className="font-medium text-text-100 truncate">{task.title}</h3>
-                  <span className={cn('text-xs px-2 py-0.5 rounded', getStatusColor(task.status))}>
-                    {task.status.replace('_', ' ')}
-                  </span>
-                  <span className={cn('text-xs px-2 py-0.5 rounded', getPriorityColor(task.priority))}>
-                    {task.priority}
-                  </span>
-                </div>
-                {task.description && (
-                  <p className="text-sm text-muted-400 truncate">{task.description}</p>
-                )}
-                <div className="flex items-center gap-4 mt-2 text-xs text-muted-400">
-                  <span>{formatTaskDate(task.createdAt)}</span>
-                  {task.assignedTo && (
-                    <span>Assigned to {task.assignedTo.name || task.assignedTo.email}</span>
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-text-100 font-medium truncate">{task.title}</h3>
+                  {task.description && (
+                    <p className="text-sm text-muted-400 mt-1 line-clamp-2">{task.description}</p>
                   )}
+                  <div className="flex items-center gap-3 mt-2">
+                    <span className={`text-xs font-medium ${getTaskStatusColor(task.status)}`}>
+                      {task.status.replace('_', ' ')}
+                    </span>
+                    <span className={`text-xs font-medium ${getTaskPriorityColor(task.priority)}`}>
+                      {task.priority}
+                    </span>
+                    {task.assignedTo && (
+                      <span className="text-xs text-muted-400">
+                        Assigned to {task.assignedTo.name || task.assignedTo.email}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => onEdit(task)}
-                  aria-label={`Edit task ${task.title}`}
-                >
-                  Edit
-                </Button>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => onDelete(task)}
-                  aria-label={`Delete task ${task.title}`}
-                >
-                  Delete
-                </Button>
+                <div className="flex items-center gap-2 ml-4">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => onEdit(task)}
+                    aria-label={`Edit task ${task.title}`}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => handleDelete(task.id)}
+                    disabled={deletingId === task.id}
+                    aria-label={`Delete task ${task.title}`}
+                  >
+                    {deletingId === task.id ? 'Deleting...' : 'Delete'}
+                  </Button>
+                </div>
               </div>
             </div>
           );
@@ -106,4 +119,3 @@ export const VirtualizedTaskTable = ({
     </div>
   );
 };
-
