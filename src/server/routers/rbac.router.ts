@@ -3,11 +3,12 @@ import { router, protectedProcedure } from '@/lib/trpc';
 import { prisma } from '@/lib/prisma';
 import { enforceRole } from '../middlewares/enforceRole';
 import { generateInviteToken, getInviteExpiry } from '@/lib/invite';
+import { checkRateLimit } from '@/lib/rate-limit';
+import { TRPCError } from '@trpc/server';
 import { Role } from '@prisma/client';
 
 export const rbacRouter = router({
-  inviteUser: protectedProcedure
-    .use(enforceRole([Role.OWNER, Role.ADMIN]))
+  inviteUser: enforceRole([Role.OWNER, Role.ADMIN])
     .input(
       z.object({
         organizationId: z.string(),
@@ -16,6 +17,19 @@ export const rbacRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      // Rate limit: 10 invites per minute per user
+      const rateLimitResult = await checkRateLimit(
+        `invite-user:${ctx.session.user.id}`,
+        10,
+        '1m'
+      );
+
+      if (!rateLimitResult.success) {
+        throw new TRPCError({
+          code: 'TOO_MANY_REQUESTS',
+          message: 'Too many invite requests. Please try again later.',
+        });
+      }
       // Check if user already exists
       let user = await prisma.user.findUnique({
         where: { email: input.email },

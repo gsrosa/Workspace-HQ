@@ -5,8 +5,14 @@ import { prisma } from '@/lib/prisma';
 
 export const enforceRole = (allowedRoles: Role[]) => {
   return protectedProcedure.use(async ({ ctx, next, input }) => {
-    const { organizationId } = input as { organizationId: string };
-    const userId = ctx.session.user.id;
+    const organizationId = (input as any)?.organizationId;
+    if (!organizationId || typeof organizationId !== 'string') {
+      throw new TRPCError({ code: 'BAD_REQUEST', message: 'organizationId is required' });
+    }
+    const userId = ctx.session.user?.id;
+    if (!userId) {
+      throw new TRPCError({ code: 'UNAUTHORIZED', message: 'User not authenticated' });
+    }
 
     const membership = await prisma.organizationUser.findUnique({
       where: {

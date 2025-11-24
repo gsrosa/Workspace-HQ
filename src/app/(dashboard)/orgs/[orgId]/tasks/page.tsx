@@ -16,7 +16,11 @@ export default async function TasksPage({
   }
 
   return (
-    <div className="p-8">
+    <div className="p-6 lg:p-8">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-text-100">Tasks</h1>
+        <p className="text-muted-400 mt-2">Manage your organization's tasks</p>
+      </div>
       <Suspense fallback={<TaskListSkeleton />}>
         <TaskList organizationId={params.orgId} />
       </Suspense>

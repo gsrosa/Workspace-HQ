@@ -19,7 +19,7 @@ export default async function OnboardingPage() {
             Welcome, {session.user.name || session.user.email}!
           </h1>
           <p className="mt-2 text-muted-400">
-            Let's get you started with WorkspaceHQ
+            Let&apos;s get you started with WorkspaceHQ
           </p>
         </div>
         <div className="bg-surface-600 border border-border-300 rounded-xl p-8 space-y-4">

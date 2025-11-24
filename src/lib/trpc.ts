@@ -4,8 +4,8 @@ import { ZodError } from 'zod';
 import { getServerSession } from './auth';
 import { prisma } from './prisma';
 
-export const createTRPCContext = async () => {
-  const session = await getServerSession();
+export const createTRPCContext = async (opts?: { req?: Request }) => {
+  const session = await getServerSession(opts?.req);
   return {
     session,
     prisma,
@@ -29,13 +29,19 @@ export const router = t.router;
 export const publicProcedure = t.procedure;
 
 const isAuthenticated = t.middleware(({ ctx, next }) => {
-  if (!ctx.session?.user) {
+  if (!ctx.session?.user?.id) {
     throw new TRPCError({ code: 'UNAUTHORIZED' });
   }
   return next({
     ctx: {
       ...ctx,
-      session: { ...ctx.session, user: ctx.session.user },
+      session: { 
+        ...ctx.session, 
+        user: { 
+          ...ctx.session.user, 
+          id: ctx.session.user.id 
+        } 
+      },
     },
   });
 });

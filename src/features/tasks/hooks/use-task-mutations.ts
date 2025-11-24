@@ -105,7 +105,7 @@ export const useDeleteTask = (organizationId: string) => {
           ...old,
           pages: old.pages.map((page) => ({
             ...page,
-            tasks: page.tasks.filter((task) => task.id !== deletedTask.id),
+            tasks: page.tasks.filter((task: any) => task.id !== deletedTask.id),
           })),
         };
       });
