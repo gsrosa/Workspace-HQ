@@ -1,0 +1,15 @@
+{
+  "extends": ["next/core-web-vitals", "plugin:storybook/recommended"],
+  "rules": {
+    "storybook/no-renderer-packages": "off"
+  },
+  "overrides": [
+    {
+      "files": ["src/stories/**/*"],
+      "rules": {
+        "storybook/no-renderer-packages": "off"
+      }
+    }
+  ]
+}
+

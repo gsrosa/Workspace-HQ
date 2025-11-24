@@ -11,11 +11,11 @@ export default async function NewOrgPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg-900 px-4">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
+    <div className="p-6 lg:p-8">
+      <div className="max-w-2xl mx-auto">
+        <div className="mb-8">
           <h1 className="text-3xl font-bold text-text-100">Create Organization</h1>
-          <p className="mt-2 text-muted-400">
+          <p className="text-muted-400 mt-2">
             Create a new organization to get started
           </p>
         </div>

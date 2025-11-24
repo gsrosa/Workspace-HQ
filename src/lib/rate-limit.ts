@@ -54,25 +54,32 @@ const createMemoryRateLimit = () => ({
   },
 });
 
-export const rateLimit = redis
+const upstashRateLimit = redis
   ? new Ratelimit({
       redis,
       limiter: Ratelimit.slidingWindow(10, '10 s'),
       analytics: true,
     })
-  : createMemoryRateLimit();
+  : null;
+
+// Unified rate limit interface
+export const rateLimit = {
+  check: async (identifier: string, limit: number, window: string) => {
+    if (upstashRateLimit) {
+      const result = await upstashRateLimit.limit(identifier);
+      return {
+        success: result.success,
+        limit,
+        remaining: result.remaining,
+        reset: result.reset,
+      };
+    } else {
+      return await createMemoryRateLimit().check(identifier, limit, window);
+    }
+  },
+};
 
 // Helper function for tRPC middleware
 export const checkRateLimit = async (identifier: string, limit: number, window: string) => {
-  if (redis) {
-    const result = await rateLimit.limit(identifier);
-    return {
-      success: result.success,
-      limit,
-      remaining: result.remaining,
-      reset: result.reset,
-    };
-  } else {
-    return await (rateLimit as ReturnType<typeof createMemoryRateLimit>).check(identifier, limit, window);
-  }
+  return await rateLimit.check(identifier, limit, window);
 };
