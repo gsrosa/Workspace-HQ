@@ -92,12 +92,6 @@ export const DashboardContent = () => {
           value={stats.doneTasks}
           description="Finished tasks"
         />
-        <StatsCard
-          title="Team Members"
-          value={stats.totalMembers}
-          description="Organization members"
-          className="md:col-span-2 lg:col-span-1"
-        />
       </div>
 
       {/* Task Status Charts */}

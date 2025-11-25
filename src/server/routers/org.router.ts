@@ -68,7 +68,10 @@ export const orgRouter = router({
       include: { organization: true },
       orderBy: { createdAt: 'desc' },
     });
-    return memberships.map((m: { organization: any }) => m.organization);
+    return memberships.map((m: { organization: any; role: any }) => ({
+      ...m.organization,
+      role: m.role,
+    }));
   }),
 });
 

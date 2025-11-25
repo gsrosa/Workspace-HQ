@@ -5,9 +5,11 @@ import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
+    // Middleware ensures user is authenticated for /api/org routes
+    const session = await getServerSession(request);
     
-    if (!session?.user) {
+    if (!session?.user?.id) {
+      // This should not happen if middleware is working correctly, but keeping as safety check
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -18,11 +20,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid orgId' }, { status: 400 });
     }
 
-    // Verify user is a member of this organization
     const userId = session.user.id;
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID not found' }, { status: 401 });
-    }
 
     const membership = await prisma.organizationUser.findUnique({
       where: {

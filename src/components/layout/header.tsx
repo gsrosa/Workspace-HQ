@@ -10,7 +10,6 @@ import {
   Menu as MenuIcon,
   X as XIcon,
   Settings as SettingsIcon,
-  Bell as BellIcon,
 } from 'lucide-react';
 import { OrgSwitcher } from '@/features/orgs';
 import { useAuth } from '@/features/auth';
@@ -69,22 +68,6 @@ export const Header = ({ onMenuToggle, menuOpen }: HeaderProps) => {
         </div>
 
         <div className="flex items-center space-x-3">
-          {/* Notifications (placeholder for future) */}
-          <button
-            className={cn(
-              'p-2 rounded-lg',
-              'bg-surface-600 border border-border-300',
-              'text-muted-400',
-              'hover:bg-surface-600/80 hover:text-text-100',
-              'focus:outline-none focus:ring-2 focus:ring-accent-500',
-              'transition-colors',
-              'hidden sm:flex'
-            )}
-            aria-label="Notifications"
-          >
-            <BellIcon className="w-5 h-5" />
-          </button>
-
           {/* User menu */}
           <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild>

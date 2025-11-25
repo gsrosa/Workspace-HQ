@@ -6,6 +6,8 @@ import type { Task } from '../shared/models';
 import { getTaskStatusColor, getTaskPriorityColor } from '../utils/task-helpers';
 import { Button } from '@/components/ui/button';
 import { useDeleteTask } from '../hooks/use-task-mutations';
+import { useUserRole } from '@/features/orgs';
+import { Role } from '@prisma/client';
 
 interface VirtualizedTaskTableProps {
   tasks: Task[];
@@ -22,6 +24,9 @@ export const VirtualizedTaskTable = ({
 }: VirtualizedTaskTableProps) => {
   const deleteTask = useDeleteTask(organizationId);
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
+  const { data: roleData } = useUserRole(organizationId);
+  const userRole = roleData?.role;
+  const canDelete = userRole && userRole !== Role.MEMBER;
 
   const virtualizer = useVirtualizer({
     count: tasks.length,
@@ -101,15 +106,17 @@ export const VirtualizedTaskTable = ({
                   >
                     Edit
                   </Button>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={() => handleDelete(task.id)}
-                    disabled={deletingId === task.id}
-                    aria-label={`Delete task ${task.title}`}
-                  >
-                    {deletingId === task.id ? 'Deleting...' : 'Delete'}
-                  </Button>
+                  {canDelete && (
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => handleDelete(task.id)}
+                      disabled={deletingId === task.id}
+                      aria-label={`Delete task ${task.title}`}
+                    >
+                      {deletingId === task.id ? 'Deleting...' : 'Delete'}
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

@@ -24,30 +24,14 @@ export const Breadcrumbs = ({ items, className }: BreadcrumbsProps) => {
     const paths = pathname.split('/').filter(Boolean);
     const breadcrumbs: BreadcrumbItem[] = [{ label: 'Dashboard', href: '/dashboard' }];
 
-    let currentPath = '';
-    paths.forEach((path, index) => {
-      currentPath += `/${path}`;
-      
-      // Skip numeric IDs (orgId, etc.) and show meaningful labels
-      if (path === 'orgs' && paths[index + 1]) {
-        // Skip the org ID, will be handled by next iteration
-        return;
-      }
-      
-      if (path === 'tasks') {
-        breadcrumbs.push({ label: 'Tasks', href: currentPath });
-      } else if (path === 'users') {
-        breadcrumbs.push({ label: 'Users', href: currentPath });
-      } else if (path === 'new') {
-        breadcrumbs.push({ label: 'New Organization', href: currentPath });
-      } else if (path === 'dashboard') {
-        // Already added
-      } else if (!/^\d+$/.test(path)) {
-        // Only add if it's not a numeric ID
-        const label = path.charAt(0).toUpperCase() + path.slice(1).replace(/-/g, ' ');
-        breadcrumbs.push({ label, href: currentPath });
-      }
-    });
+    // Skip orgId and show only the final route (Tasks, Users, etc.)
+    if (pathname.includes('/tasks')) {
+      breadcrumbs.push({ label: 'Tasks', href: pathname });
+    } else if (pathname.includes('/users')) {
+      breadcrumbs.push({ label: 'Users', href: pathname });
+    } else if (pathname.includes('/orgs/new')) {
+      breadcrumbs.push({ label: 'New Organization', href: pathname });
+    }
 
     return breadcrumbs;
   };

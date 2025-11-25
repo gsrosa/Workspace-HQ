@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { router, protectedProcedure } from '@/lib/trpc';
 import { prisma } from '@/lib/prisma';
-import { enforceRole } from '../middlewares/enforceRole';
+import { enforceRole } from '../middlewares/enforce-role';
 import { generateInviteToken, getInviteExpiry } from '@/lib/invite';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { TRPCError } from '@trpc/server';
@@ -45,7 +45,6 @@ export const rbacRouter = router({
         });
       }
 
-      // Check if already a member
       const existingMembership = await prisma.organizationUser.findUnique({
         where: {
           organizationId_userId: {
@@ -59,11 +58,9 @@ export const rbacRouter = router({
         throw new Error('User is already a member of this organization');
       }
 
-      // Generate invite token
       const token = generateInviteToken();
       const expiresAt = getInviteExpiry();
 
-      // Create membership with invite token
       await prisma.organizationUser.create({
         data: {
           organizationId: input.organizationId,
@@ -84,7 +81,6 @@ export const rbacRouter = router({
   listUsers: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
     .query(async ({ ctx, input }) => {
-      // Verify user is a member
       const membership = await prisma.organizationUser.findUnique({
         where: {
           organizationId_userId: {
@@ -114,6 +110,28 @@ export const rbacRouter = router({
       });
 
       return members;
+    }),
+
+  getUserRole: protectedProcedure
+    .input(z.object({ organizationId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const membership = await prisma.organizationUser.findUnique({
+        where: {
+          organizationId_userId: {
+            organizationId: input.organizationId,
+            userId: ctx.session.user.id,
+          },
+        },
+        select: {
+          role: true,
+        },
+      });
+
+      if (!membership) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Not a member of this organization' });
+      }
+
+      return { role: membership.role };
     }),
 });
 

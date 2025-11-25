@@ -8,15 +8,22 @@ import { createOrgSchema, type CreateOrgInput } from '../shared/validations';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCreateOrg } from '../hooks/use-org';
+import { useSelectedOrg } from '../hooks/use-selected-org';
 
-export const OrgForm = () => {
+interface OrgFormProps {
+  onSuccess?: () => void;
+}
+
+export const OrgForm = ({ onSuccess }: OrgFormProps) => {
   const router = useRouter();
   const createOrg = useCreateOrg();
+  const { setSelectedOrg } = useSelectedOrg();
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
     setError,
+    reset,
   } = useForm<CreateOrgInput>({
     resolver: zodResolver(createOrgSchema),
   });
@@ -24,6 +31,11 @@ export const OrgForm = () => {
   const onSubmit = async (data: CreateOrgInput) => {
     try {
       const org = await createOrg.mutateAsync(data);
+      reset();
+      await setSelectedOrg(org.id);
+      if (onSuccess) {
+        onSuccess();
+      }
       router.push(`/orgs/${org.id}/tasks`);
       router.refresh();
     } catch (error: any) {

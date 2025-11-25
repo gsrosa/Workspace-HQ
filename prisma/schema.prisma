@@ -53,6 +53,7 @@ model User {
   sessions      Session[]
   orgMembers    OrganizationUser[]
   assignedTasks Task[]
+  createdTasks  Task[]    @relation("CreatedTasks")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
@@ -99,12 +100,15 @@ model Task {
   priority       String       @default("medium")
   organizationId String
   assignedToId   String?
+  createdById    String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   assignedTo     User?        @relation(fields: [assignedToId], references: [id])
+  createdBy      User         @relation("CreatedTasks", fields: [createdById], references: [id])
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
   @@index([organizationId])
   @@index([assignedToId])
+  @@index([createdById])
 }
 

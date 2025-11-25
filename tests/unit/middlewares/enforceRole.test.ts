@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { enforceRole } from '@/server/middlewares/enforceRole';
+import { enforceRole } from '@/server/middlewares/enforce-role';
 import { protectedProcedure } from '@/lib/trpc';
 import { prisma } from '@/lib/prisma';
 import { Role } from '@prisma/client';

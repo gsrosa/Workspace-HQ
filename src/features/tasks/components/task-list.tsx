@@ -2,10 +2,13 @@
 
 import React from 'react';
 import { useTasks } from '../hooks/use-task-query';
-import { VirtualizedTaskTable } from './virtualized-task-table';
+import { KanbanBoard } from './kanban-board';
 import { TaskSkeleton, TaskListSkeleton } from './task-skeleton';
 import { TaskForm } from './task-form';
 import { Button } from '@/components/ui/button';
+import { useUserRole } from '@/features/orgs';
+import { useDeleteTask } from '../hooks/use-task-mutations';
+import { Role } from '@prisma/client';
 import type { Task } from '../shared/models';
 
 interface TaskListProps {
@@ -15,9 +18,13 @@ interface TaskListProps {
 export const TaskList = ({ organizationId }: TaskListProps) => {
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [editingTask, setEditingTask] = React.useState<Task | undefined>();
-  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [deletingId, setDeletingId] = React.useState<string | null>(null);
   
   const { data, isLoading, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useTasks(organizationId);
+  const { data: roleData } = useUserRole(organizationId);
+  const deleteTask = useDeleteTask(organizationId);
+  const userRole = roleData?.role;
+  const canCreateOrDelete = userRole && userRole !== Role.MEMBER;
 
   const allTasks = React.useMemo(() => {
     return data?.pages.flatMap((page) => page.tasks) ?? [];
@@ -38,6 +45,19 @@ export const TaskList = ({ organizationId }: TaskListProps) => {
     setEditingTask(undefined);
   };
 
+  const handleDelete = async (taskId: string) => {
+    if (!confirm('Are you sure you want to delete this task?')) return;
+    
+    setDeletingId(taskId);
+    try {
+      await deleteTask.mutateAsync({ id: taskId, organizationId });
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   if (isLoading) {
     return <TaskListSkeleton />;
   }
@@ -54,24 +74,25 @@ export const TaskList = ({ organizationId }: TaskListProps) => {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-text-100">Tasks</h2>
-        <Button onClick={handleCreate}>New Task</Button>
+        {canCreateOrDelete && <Button onClick={handleCreate}>New Task</Button>}
       </div>
 
       {allTasks.length === 0 ? (
         <div className="p-8 text-center border border-border-300 rounded-lg bg-surface-600">
           <p className="text-muted-400 mb-4">No tasks yet. Create your first task to get started.</p>
-          <Button onClick={handleCreate}>Create Task</Button>
+          {canCreateOrDelete && <Button onClick={handleCreate}>Create Task</Button>}
         </div>
       ) : (
         <>
-          <VirtualizedTaskTable
+          <KanbanBoard
             tasks={allTasks}
             organizationId={organizationId}
             onEdit={handleEdit}
-            containerRef={containerRef}
+            onDelete={handleDelete}
+            deletingId={deletingId}
           />
           {hasNextPage && (
-            <div className="text-center">
+            <div className="text-center mt-6">
               <Button
                 variant="secondary"
                 onClick={() => fetchNextPage()}
